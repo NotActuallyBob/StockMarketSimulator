@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace StockMarketSimulator.MarketCore
+namespace MarketCore
 {
     public class Trader
     {
@@ -20,16 +20,16 @@ namespace StockMarketSimulator.MarketCore
             nextTraderId++;
         }
 
-        public void Buy(int tradableId, double price)
+        public void Buy(int tradableId, int quantity, double price)
         {
-            Order order = new Order(traderId, tradableId, price);
-            market.AddBuyBid(order);
+            Order order = new Order(traderId, tradableId, quantity, price, OrderType.Buy);
+            market.AddOrder(order);
         }
 
-        public void Sell(int tradableId, double price)
+        public void Sell(int tradableId, int quantity, double price)
         {
-            Order order = new Order(traderId, tradableId, price);
-            market.AddSellBid(order);
+            Order order = new Order(traderId, tradableId, quantity, price, OrderType.Sell);
+            market.AddOrder(order);
         }
     }
 }

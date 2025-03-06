@@ -3,71 +3,58 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using MarketCore.Services;
+using Microsoft.EntityFrameworkCore;
 
-namespace StockMarketSimulator.MarketCore
+namespace MarketCore
 {
     public class Market
     {
-        Dictionary<int, List<Order>> buyOrders = new Dictionary<int, List<Order>>();
-        Dictionary<int, List<Order>> sellOrders = new Dictionary<int, List<Order>>();
+        int marketId = 0;
 
-        List<int> tradables = new List<int>();
-        List<Trade> trades = new List<Trade>();
+        private readonly IOrderService orderService;
+        private readonly ITradableService tradablesService;
+        private readonly ITradeService tradeService;
 
-        public Market()
+        public Market(IOrderService orderService, ITradableService tradablesService, ITradeService tradeService)
         {
-            AddTradable(1);
-            AddTradable(2);
+            this.orderService = orderService;
+            this.tradablesService = tradablesService;
+            this.tradeService = tradeService;
+
+            Tradable tradable1 = new Tradable("NESTE", marketId);
+            Tradable tradable2 = new Tradable("KONE", marketId);
+            tradablesService.Add(tradable1);
+            tradablesService.Add(tradable2);
         }
 
-        private void AddTradable(int tradableId)
+        public void AddOrder(Order order)
         {
-            if(tradables.Contains(tradableId))
+            if(order == null || !tradablesService.Exists(order.TradableId))
             {
                 return;
             }
 
-            tradables.Add(tradableId);
-            buyOrders[tradableId] = new List<Order>();
-            sellOrders[tradableId] = new List<Order>();
+            orderService.AddOrder(order);
         }
 
-        public void AddBuyBid(Order order)
+        public void RevokeOrder(Order order)
         {
-            if(order == null || !tradables.Contains(order.TradableId))
+            if(order == null)
             {
                 return;
             }
 
-            if (!buyOrders.ContainsKey(order.TradableId))
-            {
-                buyOrders[order.TradableId] = new List<Order>();
-            }
-
-            buyOrders[order.TradableId].Add(order);
-        }
-
-        public void AddSellBid(Order order)
-        {
-            if (order == null)
-            {
-                return;
-            }
-
-            if (!sellOrders.ContainsKey(order.TradableId))
-            {
-                sellOrders[order.TradableId] = new List<Order>();
-            }
-
-            sellOrders[order.TradableId].Add(order);
+            orderService.RevokeOrder(order);
         }
 
         public void ResolveTrades()
         {
-            foreach(int tradableId in tradables)
+            List<Tradable> tradables = tradablesService.Get(marketId);
+            foreach (Tradable tradable in tradables)
             {
-                List<Order> tradablesBuyOrders = buyOrders[tradableId];
-                List<Order> tradablesSellOrders = sellOrders[tradableId];
+                List<Order> tradablesBuyOrders = orderService.GetBuyOrders(tradable.Id);
+                List<Order> tradablesSellOrders = orderService.GetSellOrders(tradable.Id);
 
                 tradablesSellOrders.Sort((a, b) => a.CompareTo(b));
                 tradablesBuyOrders.Sort((a, b) => b.CompareTo(a));
@@ -79,10 +66,32 @@ namespace StockMarketSimulator.MarketCore
                         break;
                     }
 
-                    //We have a trade
-                    trades.Add(new Trade(tradablesSellOrders[0], tradablesBuyOrders[0]));
-                    tradablesBuyOrders.RemoveAt(0);
-                    tradablesSellOrders.RemoveAt(0);
+                    Order buyOrder = tradablesBuyOrders[0];
+                    Order sellOrder = tradablesSellOrders[0];
+
+                    if(buyOrder.Quantity > sellOrder.Quantity)
+                    {
+                        tradeService.Add(new Trade(sellOrder, buyOrder, sellOrder.Quantity));
+                        orderService.PartlyFullfill(buyOrder, sellOrder.Quantity);
+                        tradablesSellOrders.RemoveAt(0);
+
+                        orderService.RemoveOrder(sellOrder);
+                    } else if (buyOrder.Quantity < sellOrder.Quantity)
+                    {
+                        tradeService.Add(new Trade(sellOrder, buyOrder, buyOrder.Quantity));
+                        orderService.PartlyFullfill(sellOrder, buyOrder.Quantity);
+                        tradablesBuyOrders.RemoveAt(0);
+
+                        orderService.RemoveOrder(buyOrder);
+                    } else
+                    {
+                        tradeService.Add(new Trade(sellOrder, buyOrder, sellOrder.Quantity));
+                        tradablesBuyOrders.RemoveAt(0);
+                        tradablesSellOrders.RemoveAt(0);
+
+                        orderService.RemoveOrder(sellOrder);
+                        orderService.RemoveOrder(buyOrder);
+                    }
                 }
             }
         }
