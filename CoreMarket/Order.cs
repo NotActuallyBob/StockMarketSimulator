@@ -9,12 +9,14 @@ namespace StockMarketSimulator
     public class Order : IComparable<Order>
     {
         public int TraderId { get; set; }
+        public int TradableId { get; set; }
         public double Price { get; set; }
         public DateTime EntryTime { get; set; }
 
-        public Order(int traderId, double price)
+        public Order(int traderId, int tradableId, double price)
         {
             TraderId = traderId;
+            TradableId = tradableId;
             Price = price;
             EntryTime = DateTime.Now;
         }

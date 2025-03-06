@@ -20,15 +20,15 @@ namespace StockMarketSimulator
             nextTraderId++;
         }
 
-        public void Buy(double price)
+        public void Buy(int tradableId, double price)
         {
-            Order order = new Order(traderId, price);
+            Order order = new Order(traderId, tradableId, price);
             market.AddBuyBid(order);
         }
 
-        public void Sell(double price)
+        public void Sell(int tradableId, double price)
         {
-            Order order = new Order(traderId, price);
+            Order order = new Order(traderId, tradableId, price);
             market.AddSellBid(order);
         }
     }
