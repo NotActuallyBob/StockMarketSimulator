@@ -8,21 +8,28 @@ namespace StockMarketSimulator
 {
     public class Trader
     {
+        static int nextTraderId = 0;
+
         Market market;
+        int traderId;
 
         public Trader(Market market)
         {
             this.market = market;
+            this.traderId = nextTraderId;
+            nextTraderId++;
         }
 
         public void Buy(double price)
         {
-            market.AddBuyBid(price);
+            Order order = new Order(traderId, price);
+            market.AddBuyBid(order);
         }
 
         public void Sell(double price)
         {
-            market.AddSellBid(price);
+            Order order = new Order(traderId, price);
+            market.AddSellBid(order);
         }
     }
 }

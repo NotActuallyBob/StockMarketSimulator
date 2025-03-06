@@ -8,41 +8,52 @@ namespace StockMarketSimulator
 {
     public class Market
     {
-        List<double> sellPrices = new List<double>();
-        List<double> buyPrices = new List<double>();
-        List<double> trades = new List<double>();
+        List<Order> buyOrders = new List<Order>();
+        List<Order> sellOrders = new List<Order>();
+
+        List<Trade> trades = new List<Trade>();
 
         public Market()
         {
             
         }
 
-        public void AddBuyBid(double price)
+        public void AddBuyBid(Order order)
         {
-            buyPrices.Add(price);
+            if(order == null)
+            {
+                return;
+            }
+
+            buyOrders.Add(order);
         }
 
-        public void AddSellBid(double price)
+        public void AddSellBid(Order order)
         {
-            sellPrices.Add(price);
+            if (order == null)
+            {
+                return;
+            }
+
+            sellOrders.Add(order);
         }
 
         public void ResolveTrades()
         {
-            sellPrices.Sort((a, b) => a.CompareTo(b));
-            buyPrices.Sort((a, b) => b.CompareTo(a));
+            sellOrders.Sort((a, b) => a.CompareTo(b));
+            buyOrders.Sort((a, b) => b.CompareTo(a));
 
             while (true)
             {
-                if (sellPrices[0] > buyPrices[0])
+                if (sellOrders.Count() == 0 || buyOrders.Count() == 0 || sellOrders[0].Price > buyOrders[0].Price)
                 {
                     break;
                 }
 
                 //We have a trade
-                trades.Add(sellPrices[0]);
-                buyPrices.RemoveAt(0);
-                sellPrices.RemoveAt(0);
+                trades.Add(new Trade(sellOrders[0], buyOrders[0]));
+                buyOrders.RemoveAt(0);
+                sellOrders.RemoveAt(0);
             }
         }
     }
